@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class TaskController {
 
@@ -15,6 +17,22 @@ public class TaskController {
 
     public TaskController(TaskService taskService) {
         this.taskService = taskService;
+    }
+
+    @GetMapping("/tasks")
+    public ResponseEntity<List<TaskResponse>> getAllTasks() {
+        List<TaskResponse> tasks = taskService.findAllTasks();
+        return ResponseEntity.ok(tasks);
+    }
+
+    @GetMapping("/tasks/{id}")
+    public ResponseEntity<TaskResponse> getTaskById(@PathVariable("id") Long id) {
+        try {
+            TaskResponse response = taskService.findTaskById(id);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PostMapping("/task/new/opentext")

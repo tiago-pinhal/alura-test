@@ -27,6 +27,20 @@ public class TaskService {
         this.courseRepository = courseRepository;
     }
 
+    public List<TaskResponse> findAllTasks() {
+        List<Task> tasks = taskRepository.findAll();
+        return tasks.stream()
+                .map(this::convertToTaskResponse)
+                .collect(Collectors.toList());
+    }
+
+    public TaskResponse findTaskById(Long id) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found with id: " + id));
+
+        return convertToTaskResponse(task);
+    }
+
     @Transactional
     public TaskResponse createOpenTextTask(OpenTextTaskRequest request) {
         validateBasicTaskRules(request.getCourseId(), request.getStatement(), request.getOrder());

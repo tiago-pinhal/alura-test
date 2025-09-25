@@ -1,25 +1,41 @@
 package br.com.alura.AluraFake.course;
 
-import br.com.alura.AluraFake.user.*;
+import br.com.alura.AluraFake.task.Task;
+import br.com.alura.AluraFake.task.TaskRepository;
+import br.com.alura.AluraFake.task.Type;
+import br.com.alura.AluraFake.task.dto.response.PublishCourseResponse;
+import br.com.alura.AluraFake.user.User;
+import br.com.alura.AluraFake.user.UserRepository;
 import br.com.alura.AluraFake.util.ErrorItemDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 public class CourseController {
 
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
 
     @Autowired
-    public CourseController(CourseRepository courseRepository, UserRepository userRepository){
+    public CourseController(
+            CourseRepository courseRepository,
+            UserRepository userRepository,
+            TaskRepository taskRepository
+
+    ){
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
+        this.taskRepository = taskRepository;
     }
 
     @Transactional
@@ -51,8 +67,68 @@ public class CourseController {
     }
 
     @PostMapping("/course/{id}/publish")
-    public ResponseEntity createCourse(@PathVariable("id") Long id) {
-        return ResponseEntity.ok().build();
+    public ResponseEntity publishCourse(@PathVariable("id") Long id) {
+       try {
+            // Search course
+            Optional<Course> courseOpt = courseRepository.findById(id);
+            if (courseOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorItemDTO("courseId", "Course not found"));
+            }
+
+            Course course = courseOpt.get();
+
+            // Validate if the course is in BUILDING status
+            if (!Status.BUILDING.equals(course.getStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorItemDTO("status", "Course must be in BUILDING status to be published"));
+            }
+
+            // Buscar todas as tarefas do curso
+            List<Task> tasks = taskRepository.findByCourseId(id);
+
+            // Validar se tem pelo menos uma atividade de cada tipo
+            boolean hasOpenText = tasks.stream().anyMatch(task -> Type.OPEN_TEXT.equals(task.getType()));
+            boolean hasSingleChoice = tasks.stream().anyMatch(task -> Type.SINGLE_CHOICE.equals(task.getType()));
+            boolean hasMultipleChoice = tasks.stream().anyMatch(task -> Type.MULTIPLE_CHOICE.equals(task.getType()));
+
+            if (!hasOpenText || !hasSingleChoice || !hasMultipleChoice) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorItemDTO("tasks", "Course must have at least one task of each type (OPEN_TEXT, SINGLE_CHOICE, MULTIPLE_CHOICE)"));
+            }
+
+            // Validar sequência contínua das ordens
+            if (!tasks.isEmpty()) {
+                List<Integer> orders = tasks.stream()
+                        .map(Task::getOrder)
+                        .sorted()
+                        .toList();
+
+                for (int i = 0; i < orders.size(); i++) {
+                    if (!orders.get(i).equals(i + 1)) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .body(new ErrorItemDTO("taskOrder", "Tasks must have continuous sequential order starting from 1"));
+                    }
+                }
+            }
+
+            course.setAsPublished();
+
+            Course publishedCourse = courseRepository.save(course);
+
+            PublishCourseResponse response = new PublishCourseResponse(
+                    publishedCourse.getId(),
+                    publishedCourse.getTitle(),
+                    publishedCourse.getStatus(),
+                    publishedCourse.getPublishedAt()
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorItemDTO("error", "Internal server error occurred"));
+        }
     }
 
 }
