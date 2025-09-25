@@ -10,7 +10,6 @@ import br.com.alura.AluraFake.task.dto.request.SingleChoiceTaskRequest;
 import br.com.alura.AluraFake.task.dto.request.TaskOptionRequest;
 import br.com.alura.AluraFake.task.dto.response.TaskOptionResponse;
 import br.com.alura.AluraFake.task.dto.response.TaskResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
