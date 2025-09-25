@@ -385,7 +385,76 @@ curl -w "%{http_code}\n" -X GET http://localhost:8080/tasks
 ```
 Retornará os seguintes registros:
 ```json
-[{"id":1,"courseId":1,"statement":"O que aprendemos na aula de hoje?","order":1,"type":"OPEN_TEXT","createdAt":"2025-09-25T15:47:18.409285","options":null},{"id":2,"courseId":1,"statement":"Atividade de Resposta Aberta","order":2,"type":"OPEN_TEXT","createdAt":"2025-09-25T15:47:38.169104","options":null},{"id":3,"courseId":1,"statement":"Atividade de alternativa única","order":3,"type":"SINGLE_CHOICE","createdAt":"2025-09-25T15:47:41.906392","options":[{"id":1,"option":"Java","isCorrect":true},{"id":2,"option":"Python","isCorrect":false},{"id":3,"option":"Ruby","isCorrect":false}]},{"id":4,"courseId":1,"statement":"O que aprendemos na aula hoje?","order":4,"type":"MULTIPLE_CHOICE","createdAt":"2025-09-25T15:48:30.385026","options":[{"id":4,"option":"Java","isCorrect":true},{"id":5,"option":"Spring","isCorrect":true},{"id":6,"option":"Ruby","isCorrect":false}]}]2
+[
+  {
+    "id": 1,
+    "courseId": 1,
+    "statement": "What did we learn in today's class?",
+    "order": 1,
+    "type": "OPEN_TEXT",
+    "createdAt": "2025-09-25T15:47:18.409285",
+    "options": null
+  },
+  {
+    "id": 2,
+    "courseId": 1,
+    "statement": "Open-ended Activity",
+    "order": 2,
+    "type": "OPEN_TEXT",
+    "createdAt": "2025-09-25T15:47:38.169104",
+    "options": null
+  },
+  {
+    "id": 3,
+    "courseId": 1,
+    "statement": "Single-choice Activity",
+    "order": 3,
+    "type": "SINGLE_CHOICE",
+    "createdAt": "2025-09-25T15:47:41.906392",
+    "options": [
+      {
+        "id": 1,
+        "option": "Java",
+        "isCorrect": true
+      },
+      {
+        "id": 2,
+        "option": "Python",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "courseId": 1,
+    "statement": "What did we learn in class today?",
+    "order": 4,
+    "type": "MULTIPLE_CHOICE",
+    "createdAt": "2025-09-25T15:48:30.385026",
+    "options": [
+      {
+        "id": 4,
+        "option": "Java",
+        "isCorrect": true
+      },
+      {
+        "id": 5,
+        "option": "Spring",
+        "isCorrect": true
+      },
+      {
+        "id": 6,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  }
+]
 ```
 
 Ao executar
@@ -415,7 +484,101 @@ curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
 
 Resultará em
 ```json
-[{"id":1,"courseId":1,"statement":"O que aprendemos na aula de hoje?","order":1,"type":"OPEN_TEXT","createdAt":"2025-09-25T15:47:18.409285","options":null},{"id":2,"courseId":1,"statement":"Atividade de Resposta Aberta","order":3,"type":"OPEN_TEXT","createdAt":"2025-09-25T15:47:38.169104","options":null},{"id":3,"courseId":1,"statement":"Atividade de alternativa única","order":4,"type":"SINGLE_CHOICE","createdAt":"2025-09-25T15:47:41.906392","options":[{"id":1,"option":"Java","isCorrect":true},{"id":2,"option":"Python","isCorrect":false},{"id":3,"option":"Ruby","isCorrect":false}]},{"id":4,"courseId":1,"statement":"O que aprendemos na aula hoje?","order":5,"type":"MULTIPLE_CHOICE","createdAt":"2025-09-25T15:48:30.385026","options":[{"id":4,"option":"Java","isCorrect":true},{"id":5,"option":"Spring","isCorrect":true},{"id":6,"option":"Ruby","isCorrect":false}]},{"id":5,"courseId":1,"statement":"Task na segunda posição","order":2,"type":"SINGLE_CHOICE","createdAt":"2025-09-25T16:05:17.007975","options":[{"id":7,"option":"Inteligência Artificial","isCorrect":true},{"id":8,"option":"Python","isCorrect":false},{"id":9,"option":"Ruby","isCorrect":false}]}]
+[
+  {
+    "id": 1,
+    "courseId": 1,
+    "statement": "O que aprendemos na aula de hoje?",
+    "order": 1,
+    "type": "OPEN_TEXT",
+    "createdAt": "2025-09-25T15:47:18.409285",
+    "options": null
+  },
+  {
+    "id": 2,
+    "courseId": 1,
+    "statement": "Atividade de Resposta Aberta",
+    "order": 3,
+    "type": "OPEN_TEXT",
+    "createdAt": "2025-09-25T15:47:38.169104",
+    "options": null
+  },
+  {
+    "id": 3,
+    "courseId": 1,
+    "statement": "Atividade de alternativa única",
+    "order": 4,
+    "type": "SINGLE_CHOICE",
+    "createdAt": "2025-09-25T15:47:41.906392",
+    "options": [
+      {
+        "id": 1,
+        "option": "Java",
+        "isCorrect": true
+      },
+      {
+        "id": 2,
+        "option": "Python",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "courseId": 1,
+    "statement": "O que aprendemos na aula hoje?",
+    "order": 5,
+    "type": "MULTIPLE_CHOICE",
+    "createdAt": "2025-09-25T15:48:30.385026",
+    "options": [
+      {
+        "id": 4,
+        "option": "Java",
+        "isCorrect": true
+      },
+      {
+        "id": 5,
+        "option": "Spring",
+        "isCorrect": true
+      },
+      {
+        "id": 6,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "courseId": 1,
+    "statement": "Task na segunda posição",
+    "order": 2,
+    "type": "SINGLE_CHOICE",
+    "createdAt": "2025-09-25T16:05:17.007975",
+    "options": [
+      {
+        "id": 7,
+        "option": "Inteligência Artificial",
+        "isCorrect": true
+      },
+      {
+        "id": 8,
+        "option": "Python",
+        "isCorrect": false
+      },
+      {
+        "id": 9,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  }
+]
 ```
 
 ### Publicação de Cursos
@@ -423,7 +586,45 @@ Resultará em
 ```bash
 curl -w "%{http_code}\n" -X POST http://localhost:8080/course/1/publish
 ```
-Resultará em
+Resulta em
 ```json
-{"id":1,"title":"Java","status":"PUBLISHED","publishedAt":"2025-09-25T16:26:39.069914191"}200
+{
+  "id": 1,
+  "title": "Java",
+  "status": "PUBLISHED",
+  "publishedAt": "2025-09-25T16:26:39.069914191"
+}
+```
+
+### Relatório de Cursos por Instrutor
+
+- Receber o id do instrutor como parâmetro. Retornar a lista de cursos criados por este instrutor e quantidade de atividades do curso.
+```bash
+curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/2/courses
+```
+
+Resulta em
+```json
+{
+  "courses": [
+    {
+      "id": 1,
+      "title": "Java",
+      "status": "BUILDING",
+      "publishedAt": null,
+      "taskCount": 0
+    }
+  ],
+  "totalPublishedCourses": 0
+}
+```
+
+- Caso o usuário não exista, retorna 404.
+```bash
+curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/9/courses
+```
+
+- Se o usuário existir mas não for instrutor, retorna 400.
+```bash
+curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/1/courses
 ```

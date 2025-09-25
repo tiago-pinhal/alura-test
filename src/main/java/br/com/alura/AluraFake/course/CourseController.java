@@ -3,6 +3,8 @@ package br.com.alura.AluraFake.course;
 import br.com.alura.AluraFake.task.Task;
 import br.com.alura.AluraFake.task.TaskRepository;
 import br.com.alura.AluraFake.task.Type;
+import br.com.alura.AluraFake.task.dto.response.CourseReportResponse;
+import br.com.alura.AluraFake.task.dto.response.InstructorCoursesReportResponse;
 import br.com.alura.AluraFake.task.dto.response.PublishCourseResponse;
 import br.com.alura.AluraFake.user.User;
 import br.com.alura.AluraFake.user.UserRepository;
@@ -14,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -32,7 +33,7 @@ public class CourseController {
             UserRepository userRepository,
             TaskRepository taskRepository
 
-    ){
+    ) {
         this.courseRepository = courseRepository;
         this.userRepository = userRepository;
         this.taskRepository = taskRepository;
@@ -47,7 +48,7 @@ public class CourseController {
                 .findByEmail(newCourse.getEmailInstructor())
                 .filter(User::isInstructor);
 
-        if(possibleAuthor.isEmpty()) {
+        if (possibleAuthor.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorItemDTO("emailInstructor", "Usuário não é um instrutor"));
         }
@@ -68,7 +69,7 @@ public class CourseController {
 
     @PostMapping("/course/{id}/publish")
     public ResponseEntity publishCourse(@PathVariable("id") Long id) {
-       try {
+        try {
             // Search course
             Optional<Course> courseOpt = courseRepository.findById(id);
             if (courseOpt.isEmpty()) {
@@ -129,6 +130,46 @@ public class CourseController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorItemDTO("error", "Internal server error occurred"));
         }
+    }
+
+    @GetMapping("/instructor/{id}/courses")
+    public ResponseEntity<?> getInstructorCoursesReport(@PathVariable("id") Long instructorId) {
+        Optional<User> userOpt = userRepository.findById(instructorId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        User user = userOpt.get();
+
+        if (!user.isInstructor()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        List<Course> instructorCourses = courseRepository.findByInstructor(user);
+
+        List<CourseReportResponse> courseReports = instructorCourses.stream()
+                .map(course -> {
+                    int taskCount = taskRepository.countByCourseId(course.getId());
+                    return new CourseReportResponse(
+                            course.getId(),
+                            course.getTitle(),
+                            course.getStatus(),
+                            course.getPublishedAt(),
+                            taskCount
+                    );
+                })
+                .collect(Collectors.toList());
+
+        int totalPublishedCourses = (int) instructorCourses.stream()
+                .filter(course -> Status.PUBLISHED.equals(course.getStatus()))
+                .count();
+
+        InstructorCoursesReportResponse response = new InstructorCoursesReportResponse(
+                courseReports,
+                totalPublishedCourses
+        );
+
+        return ResponseEntity.ok(response);
     }
 
 }
