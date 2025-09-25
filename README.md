@@ -52,7 +52,7 @@ Os esboços dos endpoints já estão criados — sua tarefa será **implementar 
 curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
   -H "Content-Type: application/json" \
   -d '{
-        "courseId": 42,
+        "courseId": 1,
         "statement": "O que aprendemos na aula de hoje?",
         "order": 1
       }'
