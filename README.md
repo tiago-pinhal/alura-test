@@ -1,53 +1,23 @@
 # Case Tecnico Alura
-Seja bem-vindo ao teste para desenvolvedor Java Pleno da Alura. Neste
-desafio, simulamos uma parte do nosso domínio para que você possa demonstrar seus conhecimentos. 
-Não há respostas certas ou erradas, nosso objetivo é avaliar como você aplica lógica e 
-conceitos de orientação a objetos para solucionar problemas.
+### Validação dos requisitos
 
-## Requisitos
+### Via teste unitários:
+```bash
+./mvnw test
+```
 
-- Utilizar java 18+
-- Utilizar Spring boot
-- Utilizar Spring data JPA
-- Utilizar mysql
-- utilizar criação de tabelas manuais ([flyway](https://www.baeldung.com/database-migrations-with-flyway))
+### Ou executando chamadas através do curl:
+Inicialização do sistema:
+```bash
+./mvnw clean spring-boot:run -Dspring.profiles.active=dev
+```
 
-## Orientações
+Para visualização dos dados no H2 Console: [h2-console](http://localhost:8080/h2-console)
 
-1. Suba o templete incial do projeto no seu github e deixe o repositório público(Seus commits serão avaliados).
-2. Abra o projeto na IDE de sua preferência.
-3. requisitos estão em português, mas lembre-se de no código escrever tudo em inglês.
-4. bônus não é obrigatório e não possui ordem, então você pode realizar apenas um dos que
-   são citados lá, de acordo com sua preferência.
+### Validações
 
-## Desafio
-
-Já disponibilizamos um projeto base como ponto de partida, no qual as tecnologias exigidas já estão configuradas. 
-Algumas lógicas relacionadas às entidades usuário e curso já estão implementadas, 
-e podem ser utilizadas como orientação para a resolução das questões.
-
-**Importante:** Não se preocupe com a parte visual, toda a interação devem ser feitas
-por API.
-
-### Questão 1 — Modelagem de Atividades
-
-Na Alura, os cursos possuem **atividades interativas** que ajudam no processo de aprendizado.  
-Elas podem ser de diferentes formatos, cada uma com suas regras específicas.
-
-Você deve implementar a modelagem dessas atividades, de acordo com os requisitos abaixo.  
-Os esboços dos endpoints já estão criados — sua tarefa será **implementar a lógica completa** para cada tipo de atividade.
-
-##### Regras gerais
-- O enunciado (`statement`) deve ter no mínimo 4 e no máximo 255 caracteres.
-- O curso não pode ter duas questões com o mesmo enunciado
-- A ordem deve ser um número inteiro positivo.
-- Um curso só pode receber atividades se seu status for `BULDING`.
-
-#### Tipos de atividade
-
-##### 1.1 — Atividade de Resposta Aberta
-
-**Endpoint:** `/task/new/opentext`
+**O enunciado (`statement`) deve ter no mínimo 4 e no máximo 255 caracteres.\
+Um curso só pode receber atividades se seu status for `BULDING`**
 ```bash
 curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
   -H "Content-Type: application/json" \
@@ -58,16 +28,61 @@ curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
       }'
  ```
 
-#### 1.2 — Atividade de alternativa única
+- Statement inválido (3 caracteres), deve retornar HTTP 400 (Statement must be between 4 and 255 characters):
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Oi?",
+        "order": 2
+      }'
+ ```
+**O curso não pode ter duas questões com o mesmo enunciado**
+- Repetição de statement, deve retornar 400 (Course already has a task with this statement):
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "O que aprendemos na aula de hoje?",
+        "order": 2
+      }'
+ ```
 
-**Endpoint:** `/task/new/singlechoice`
+**A ordem deve ser um número inteiro positivo**
+- Ordem negativa, deve retornar 400 (Order must be a positive number):
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "O que aprendemos na aula de hoje?",
+        "order": -2
+      }'
+ ```
+
+## Tipos de atividade
+
+#### Atividade de Resposta Aberta
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Atividade de Resposta Aberta",
+        "order": 2
+      }'
+ ```
+
+#### Atividade de alternativa única
 ```bash
 curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
   -H "Content-Type: application/json" \
   -d '{
-        "courseId": 42,
-        "statement": "O que aprendemos hoje?",
-        "order": 2,
+        "courseId": 1,
+        "statement": "Atividade de alternativa única",
+        "order": 3,
         "options": [
             {
                 "option": "Java",
@@ -85,23 +100,177 @@ curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
       }'
  ```
 
-##### Regras
-- A atividade deve ter no minimo 2 e no máximo 5 alternativas.
-- A atividade deve ter uma única alternativa correta.
-- As alternativas devem ter no mínimo 4 e no máximo 80 caracteres.
-- As alternativas não podem ser iguais entre si.
-- As alternativas não podem ser iguais ao enunciado da atividade.
-
-##### 1.3 — Atividade de múltipla escolha
-
-**Endpoint:** `/task/new/multiplechoice`
+- A atividade deve ter no minimo 2 e no máximo 5 alternativas. Abaixo, requisições inválidas.\
+  Ambas retornarão HTTP 400 (Single choice task must have between 2 and 5 options)
 ```bash
 curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
   -H "Content-Type: application/json" \
   -d '{
-        "courseId": 42,
-        "statement": "O que aprendemos hoje?",
-        "order": 2,
+        "courseId": 1,
+        "statement": "Uma única alternativa ",
+        "order": 3,
+        "options": [
+            {
+                "option": "Java",
+                "isCorrect": true
+            }
+        ]
+      }'
+ ```
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Mais de 5 alternativas",
+        "order": 3,
+        "options": [
+            {
+                "option": "Java",
+                "isCorrect": true
+            },
+            {
+                "option": "Python",
+                "isCorrect": false
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            },
+            {
+                "option": "HTML",
+                "isCorrect": false
+            },
+            {
+                "option": "CSS 3",
+                "isCorrect": false
+            },
+            {
+                "option": "Javascript",
+                "isCorrect": false
+            },
+            {
+                "option": "Node",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
+
+- A atividade deve ter uma única alternativa correta.\
+  Duas alternativas corretas: Deve retornar HTTP 400 (Single choice task must have exactly one correct option)
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Duas alternativas corretas",
+        "order": 3,
+        "options": [
+            {
+                "option": "Java",
+                "isCorrect": true
+            },
+            {
+                "option": "Python",
+                "isCorrect": true
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
+
+- As alternativas devem ter no mínimo 4 e no máximo 80 caracteres.\
+  Alternativa com 3 caracteres: Deve retornar HTTP 400 (Option must be between 4 and 80 characters)
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "CSS contem 3 caracteres",
+        "order": 3,
+        "options": [
+            {
+                "option": "CSS",
+                "isCorrect": true
+            },
+            {
+                "option": "Python",
+                "isCorrect": false
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
+
+- As alternativas não podem ser iguais entre si.\
+  Repetição de alternativas, deve retornar 400 (Options cannot be identical)
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Repete alternativas",
+        "order": 3,
+        "options": [
+            {
+                "option": "Python",
+                "isCorrect": true
+            },
+            {
+                "option": "Python",
+                "isCorrect": false
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
+
+- As alternativas não podem ser iguais ao enunciado da atividade.
+  Repetição de enunciado com uma das alternativas, deve retornar HTTP 400 (Options cannot be identical to the task statement)
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Enunciado",
+        "order": 3,
+        "options": [
+            {
+                "option": "Enunciado",
+                "isCorrect": true
+            },
+            {
+                "option": "Python",
+                "isCorrect": false
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
+
+#### Atividade de múltipla escolha
+
+- A atividade deve ter no minimo 3 e no máximo 5 alternativas.
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/multiplechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "O que aprendemos na aula hoje?",
+        "order": 4,
         "options": [
             {
                 "option": "Java",
@@ -119,94 +288,349 @@ curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
       }'
  ```
 
-##### Regras
-- A atividade deve ter no minimo 3 e no máximo 5 alternativas.
-- A atividade deve ter duas ou mais alternativas corretas, e ao menos uma alternativa incorreta.
-- As alternativas devem ter no mínimo 4 e no máximo 80 caracteres.
-- As alternativas não podem ser iguais entre si.
-- As alternativas não podem ser iguais ao enunciado da atividade.
-
-#### 👉👉Importante👈👈
-Caso uma nova atividade seja adicionada a um curso com uma ordem que já está em uso, todas as atividades com aquela ordem ou superiores devem ser deslocadas uma posição para frente, garantindo que cada atividade tenha uma ordem única e sequencial.
-```
-Exemplo:
-Se o curso possui as seguintes atividades:
-Ordem 1 – Atividade A
-Ordem 2 – Atividade B
-Ordem 3 – Atividade C
-
-E for adicionada uma nova com ordem 2, a lista será reorganizada assim:
-
-Ordem 1 – Atividade A
-Ordem 2 – Nova Atividade
-Ordem 3 – Atividade B (foi deslocada)
-Ordem 4 – Atividade C (foi deslocada)
-
-Validação de sequência:
-A ordem das atividades deve ser contínua, sem saltos. Ou seja, 
-não é permitido adicionar uma atividade com ordem 4 se ainda não existem atividades com ordens 3 (ou anteriores).
-
-Exemplo inválido:
-Se o curso tem:
-
-Ordem 1 – Atividade A
-Ordem 2 – Atividade B
-
-E uma nova atividade tenta ser inserida com ordem 4, o sistema deve lançar um erro informando que a sequência está incorreta.
-
-```
-
-### Questão 2 — Publicação de Cursos
-
-Para publicar um curso, ele deve:
-
-- Conter ao menos uma atividade de cada tipo.
-- Ter atividades com `order` em sequência contínua (ex: 1, 2, 3...).
-- O curso só pode ser publicado se o status for `BUILDING`.
-- Ter o `status` atualizado para `PUBLISHED` e `publishedAt` com a data atual.
-
-Implemente o endpoint `/course/{id}/publish` validando essas regras antes da publicação.
-
-Exemplo de requisição:
+- Excedendo os limites de alternativas: Deve retornar HTTP 400 (Multiple choice task must have between 3 and 5 options)
 ```bash
-curl -w "%{http_code}\n" -X POST http://localhost:8080/course/42/publish
-```
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/multiplechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Número abaixo de alternativas",
+        "order": 4,
+        "options": [
+            {
+                "option": "Java",
+                "isCorrect": true
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
 
-
-### Questão 3 — Relatório de Cursos por Instrutor
-
-Implemente um endpoint para gerar um relatório de cursos vinculados a um instrutor específico.
-
-O relatório deve:
-
-- Receber o id do instrutor como parâmetro.
-- Caso o usuário não exista retornar 404.
-- Se o usuário existir mas não for instrutor retorna 400.
-- Retornar a lista de cursos criados por este instrutor, incluindo: id, title, status, publishedAt(se houver) e quantidade de atividades do curso.
-- Retornar também o total de cursos publicados desse instrutor.
-- Caso o instrutor não possua cursos, retornar uma lista vazia.
-
-Exemplo de requisição:
 ```bash
-curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/7/courses
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/multiplechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Número acima de alternativas",
+        "order": 4,
+        "options": [
+            {
+                "option": "Java",
+                "isCorrect": true
+            },
+            {
+                "option": "Spring",
+                "isCorrect": true
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            },
+            {
+                "option": "HTML",
+                "isCorrect": false
+            },
+            {
+                "option": "CSS 3",
+                "isCorrect": false
+            },
+            {
+                "option": "Javascript",
+                "isCorrect": false
+            },
+            {
+                "option": "Node",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
+
+- A atividade deve ter duas ou mais alternativas corretas, e ao menos uma alternativa incorreta.\
+  Dado uma única alternatica correta: Deve retornar HTTP 400 (Multiple choice task must have at least one correct option)
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/multiplechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Uma única alternativa correta",
+        "order": 4,
+        "options": [
+            {
+                "option": "Java",
+                "isCorrect": true
+            },
+            {
+                "option": "Spring",
+                "isCorrect": false
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            },
+            {
+                "option": "HTML",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
+
+- As alternativas devem ter no mínimo 4 e no máximo 80 caracteres. (Validado em testes anteriores)
+- As alternativas não podem ser iguais entre si.(Validado em testes anteriores)
+- As alternativas não podem ser iguais ao enunciado da atividade.(Validado em testes anteriores)
+
+#### Validação de sequência:\n
+
+A ordem das tasks atuais (1, 2, 3, 4):
+```bash
+curl -w "%{http_code}\n" -X GET http://localhost:8080/tasks
+```
+Retornará os seguintes registros:
+```json
+[
+  {
+    "id": 1,
+    "courseId": 1,
+    "statement": "What did we learn in today's class?",
+    "order": 1,
+    "type": "OPEN_TEXT",
+    "createdAt": "2025-09-25T15:47:18.409285",
+    "options": null
+  },
+  {
+    "id": 2,
+    "courseId": 1,
+    "statement": "Open-ended Activity",
+    "order": 2,
+    "type": "OPEN_TEXT",
+    "createdAt": "2025-09-25T15:47:38.169104",
+    "options": null
+  },
+  {
+    "id": 3,
+    "courseId": 1,
+    "statement": "Single-choice Activity",
+    "order": 3,
+    "type": "SINGLE_CHOICE",
+    "createdAt": "2025-09-25T15:47:41.906392",
+    "options": [
+      {
+        "id": 1,
+        "option": "Java",
+        "isCorrect": true
+      },
+      {
+        "id": 2,
+        "option": "Python",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "courseId": 1,
+    "statement": "What did we learn in class today?",
+    "order": 4,
+    "type": "MULTIPLE_CHOICE",
+    "createdAt": "2025-09-25T15:48:30.385026",
+    "options": [
+      {
+        "id": 4,
+        "option": "Java",
+        "isCorrect": true
+      },
+      {
+        "id": 5,
+        "option": "Spring",
+        "isCorrect": true
+      },
+      {
+        "id": 6,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  }
+]
 ```
 
-### Bônus (não obrigatório)
-Você não precisa implementar obrigatóriamente nenhum dos itens abaixo.
-Caso decida implementar, escolha **apenas um**:
+Ao executar
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
+  -H "Content-Type: application/json" \
+  -d '{
+        "courseId": 1,
+        "statement": "Task na segunda posição",
+        "order": 2,
+        "options": [
+            {
+                "option": "Inteligência Artificial",
+                "isCorrect": true
+            },
+            {
+                "option": "Python",
+                "isCorrect": false
+            },
+            {
+                "option": "Ruby",
+                "isCorrect": false
+            }
+        ]
+      }'
+ ```
 
-- Spring Security: Proteger os endpoints de criação de atividades, criação/publicação de cursos e relatório de cursos por instrutor.
-O acesso deve ser restrito a usuários com a role INSTRUCTOR. Os demais endpoints de listagens podem ser acessados por qualquer usuário autenticado.
+Resultará em
+```json
+[
+  {
+    "id": 1,
+    "courseId": 1,
+    "statement": "O que aprendemos na aula de hoje?",
+    "order": 1,
+    "type": "OPEN_TEXT",
+    "createdAt": "2025-09-25T15:47:18.409285",
+    "options": null
+  },
+  {
+    "id": 2,
+    "courseId": 1,
+    "statement": "Atividade de Resposta Aberta",
+    "order": 3,
+    "type": "OPEN_TEXT",
+    "createdAt": "2025-09-25T15:47:38.169104",
+    "options": null
+  },
+  {
+    "id": 3,
+    "courseId": 1,
+    "statement": "Atividade de alternativa única",
+    "order": 4,
+    "type": "SINGLE_CHOICE",
+    "createdAt": "2025-09-25T15:47:41.906392",
+    "options": [
+      {
+        "id": 1,
+        "option": "Java",
+        "isCorrect": true
+      },
+      {
+        "id": 2,
+        "option": "Python",
+        "isCorrect": false
+      },
+      {
+        "id": 3,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "courseId": 1,
+    "statement": "O que aprendemos na aula hoje?",
+    "order": 5,
+    "type": "MULTIPLE_CHOICE",
+    "createdAt": "2025-09-25T15:48:30.385026",
+    "options": [
+      {
+        "id": 4,
+        "option": "Java",
+        "isCorrect": true
+      },
+      {
+        "id": 5,
+        "option": "Spring",
+        "isCorrect": true
+      },
+      {
+        "id": 6,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "courseId": 1,
+    "statement": "Task na segunda posição",
+    "order": 2,
+    "type": "SINGLE_CHOICE",
+    "createdAt": "2025-09-25T16:05:17.007975",
+    "options": [
+      {
+        "id": 7,
+        "option": "Inteligência Artificial",
+        "isCorrect": true
+      },
+      {
+        "id": 8,
+        "option": "Python",
+        "isCorrect": false
+      },
+      {
+        "id": 9,
+        "option": "Ruby",
+        "isCorrect": false
+      }
+    ]
+  }
+]
+```
 
-- Automação com GitHub Actions: Criar uma pipeline que execute os testes automaticamente a cada commit.
+### Publicação de Cursos
 
-## Considerações finais
+```bash
+curl -w "%{http_code}\n" -X POST http://localhost:8080/course/1/publish
+```
+Resulta em
+```json
+{
+  "id": 1,
+  "title": "Java",
+  "status": "PUBLISHED",
+  "publishedAt": "2025-09-25T16:26:39.069914191"
+}
+```
 
-- A avaliação do case será realizada exclusivamente com base nos requisitos e na forma como você utiliza **lógica**,
-**orientação a objetos** e **testes**. Qualquer tecnologia fora do escopo, como Swagger, Docker, ou aspectos visuais, 
-  não será considerada como um diferencial.
-- Testes são obrigatórios e serão avaliados como requisito.
-- Caso você tenha alguma dúvida sobre a descrição das questões, faça anotações no código e siga o que considerar mais adequado.
-- Outros candidatos estão concorrendo à mesma vaga, e códigos muito semelhantes resultarão na anulação do case.
-- Utilize ferramentas de IA, mas tenha cautela com o código gerado automaticamente. Caso avance para a próxima etapa, 
-a entrevista síncrona será baseada no código que você produziu.
+### Relatório de Cursos por Instrutor
+
+- Receber o id do instrutor como parâmetro. Retornar a lista de cursos criados por este instrutor e quantidade de atividades do curso.
+```bash
+curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/2/courses
+```
+
+Resulta em
+```json
+{
+  "courses": [
+    {
+      "id": 1,
+      "title": "Java",
+      "status": "BUILDING",
+      "publishedAt": null,
+      "taskCount": 0
+    }
+  ],
+  "totalPublishedCourses": 0
+}
+```
+
+- Caso o usuário não exista, retorna 404.
+```bash
+curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/9/courses
+```
+
+- Se o usuário existir mas não for instrutor, retorna 400.
+```bash
+curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/1/courses
+```
