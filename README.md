@@ -39,7 +39,7 @@ curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
       }'
  ```
 **O curso não pode ter duas questões com o mesmo enunciado**
-- Repetição de statement, deve retornar 400 (Course already has a task with this statement):
+- Repetição de statement, deve retornar HTTP 400 (Course already has a task with this statement):
 ```bash
 curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
   -H "Content-Type: application/json" \
@@ -51,7 +51,7 @@ curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
  ```
 
 **A ordem deve ser um número inteiro positivo**
-- Ordem negativa, deve retornar 400 (Order must be a positive number):
+- Ordem negativa, deve retornar HTTP 400 (Order must be a positive number):
 ```bash
 curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/opentext \
   -H "Content-Type: application/json" \
@@ -210,7 +210,7 @@ curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
  ```
 
 - As alternativas não podem ser iguais entre si.\
-  Repetição de alternativas, deve retornar 400 (Options cannot be identical)
+  Repetição de alternativas, deve retornar HTTP 400 (Options cannot be identical)
 ```bash
 curl -w "%{http_code}\n" -X POST http://localhost:8080/task/new/singlechoice \
   -H "Content-Type: application/json" \
@@ -625,12 +625,12 @@ Resulta em
 }
 ```
 
-- Caso o usuário não exista, retorna 404.
+- Caso o usuário não exista, retorna HTTP 404.
 ```bash
 curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/9/courses
 ```
 
-- Se o usuário existir mas não for instrutor, retorna 400.
+- Se o usuário existir mas não for instrutor, retorna HTTP 400.
 ```bash
 curl -w "%{http_code}\n" -X GET http://localhost:8080/instructor/1/courses
 ```
