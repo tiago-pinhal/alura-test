@@ -37,10 +37,11 @@ public class CourseService {
     }
 
     @Transactional
-    public void createCourse(NewCourseDTO newCourse) {
+    public Course createCourse(NewCourseDTO newCourse) {
         User instructor = validateAndGetInstructor(newCourse.getEmailInstructor());
         Course course = new Course(newCourse.getTitle(), newCourse.getDescription(), instructor);
         courseRepository.save(course);
+        return course;
     }
 
     public List<CourseListItemDTO> getAllCourses() {

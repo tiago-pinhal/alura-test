@@ -1,7 +1,13 @@
 # Case Tecnico Alura
-Simples chamadas de API para validar os requisitos
+### Validação dos requisitos
 
-Inicialização:
+### Via teste unitários:
+```bash
+./mvnw test
+```
+
+### Ou executando chamadas através do curl:
+Inicialização do sistema:
 ```bash
 ./mvnw clean spring-boot:run -Dspring.profiles.active=dev
 ```
