@@ -1,72 +1,161 @@
 package br.com.alura.AluraFake.course;
 
+import br.com.alura.AluraFake.exception.CourseNotFoundException;
+import br.com.alura.AluraFake.exception.InstructorNotFoundException;
+import br.com.alura.AluraFake.exception.InvalidCourseStateException;
+import br.com.alura.AluraFake.exception.UserNotInstructorException;
+import br.com.alura.AluraFake.task.Task;
+import br.com.alura.AluraFake.task.TaskRepository;
+import br.com.alura.AluraFake.task.Type;
+import br.com.alura.AluraFake.task.dto.response.CourseReportResponse;
 import br.com.alura.AluraFake.task.dto.response.InstructorCoursesReportResponse;
 import br.com.alura.AluraFake.task.dto.response.PublishCourseResponse;
-import br.com.alura.AluraFake.util.ErrorItemDTO;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
+import br.com.alura.AluraFake.user.User;
+import br.com.alura.AluraFake.user.UserRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-@RestController
-public class CourseController {
+@Service
+public class CourseService {
 
-    private final CourseService courseService;
+    private final CourseRepository courseRepository;
+    private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
 
-    public CourseController(CourseService courseService) {
-        this.courseService = courseService;
+    public CourseService(
+            CourseRepository courseRepository,
+            UserRepository userRepository,
+            TaskRepository taskRepository
+    ) {
+        this.courseRepository = courseRepository;
+        this.userRepository = userRepository;
+        this.taskRepository = taskRepository;
     }
 
-    @PostMapping("/course/new")
-    public ResponseEntity<?> createCourse(@Valid @RequestBody NewCourseDTO newCourse) {
-        try {
-            courseService.createCourse(newCourse);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorItemDTO("emailInstructor", "Usuario nao e um instrutor"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorItemDTO("error", "Internal server error occurred"));
+    @Transactional
+    public void createCourse(NewCourseDTO newCourse) {
+        User instructor = validateAndGetInstructor(newCourse.getEmailInstructor());
+        Course course = new Course(newCourse.getTitle(), newCourse.getDescription(), instructor);
+        courseRepository.save(course);
+    }
+
+    public List<CourseListItemDTO> getAllCourses() {
+        return courseRepository.findAll().stream()
+                .map(CourseListItemDTO::new)
+                .toList();
+    }
+
+    @Transactional
+    public PublishCourseResponse publishCourse(Long courseId) {
+        Course course = findCourseById(courseId);
+        validateCourseCanBePublished(course);
+        validateCourseHasRequiredTasks(courseId);
+        validateTaskSequence(courseId);
+
+        course.setAsPublished();
+        Course publishedCourse = courseRepository.save(course);
+
+        return new PublishCourseResponse(
+                publishedCourse.getId(),
+                publishedCourse.getTitle(),
+                publishedCourse.getStatus(),
+                publishedCourse.getPublishedAt()
+        );
+    }
+
+    public InstructorCoursesReportResponse getInstructorCoursesReport(Long instructorId) {
+        User instructor = validateAndGetInstructorById(instructorId);
+        List<Course> instructorCourses = courseRepository.findByInstructor(instructor);
+
+        List<CourseReportResponse> courseReports = instructorCourses.stream()
+                .map(this::buildCourseReport)
+                .collect(Collectors.toList());
+
+        int totalPublishedCourses = (int) instructorCourses.stream()
+                .filter(course -> Status.PUBLISHED.equals(course.getStatus()))
+                .count();
+
+        return new InstructorCoursesReportResponse(courseReports, totalPublishedCourses);
+    }
+
+    // Private helper methods
+
+    private User validateAndGetInstructor(String email) {
+        return userRepository.findByEmail(email)
+                .filter(User::isInstructor)
+                .orElseThrow(UserNotInstructorException::new);
+    }
+
+    private User validateAndGetInstructorById(Long instructorId) {
+        User user = userRepository.findById(instructorId)
+                .orElseThrow(() -> new InstructorNotFoundException(instructorId));
+
+        if (!user.isInstructor()) {
+            throw new UserNotInstructorException();
+        }
+
+        return user;
+    }
+
+    private Course findCourseById(Long courseId) {
+        return courseRepository.findById(courseId)
+                .orElseThrow(() -> new CourseNotFoundException(courseId));
+    }
+
+    private void validateCourseCanBePublished(Course course) {
+        if (!Status.BUILDING.equals(course.getStatus())) {
+            throw new InvalidCourseStateException("Course must be in BUILDING status to be published");
         }
     }
 
-    @GetMapping("/course/all")
-    public ResponseEntity<List<CourseListItemDTO>> getAllCourses() {
-        List<CourseListItemDTO> courses = courseService.getAllCourses();
-        return ResponseEntity.ok(courses);
-    }
+    private void validateCourseHasRequiredTasks(Long courseId) {
+        List<Task> tasks = taskRepository.findByCourseId(courseId);
 
-    @PostMapping("/course/{id}/publish")
-    public ResponseEntity<?> publishCourse(@PathVariable("id") Long id) {
-        try {
-            PublishCourseResponse response = courseService.publishCourse(id);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorItemDTO("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorItemDTO("error", "Internal server error occurred"));
+        Set<Type> existingTypes = tasks.stream()
+                .map(Task::getType)
+                .collect(Collectors.toSet());
+
+        Set<Type> requiredTypes = EnumSet.allOf(Type.class);
+
+        if (!existingTypes.containsAll(requiredTypes)) {
+            Set<Type> missingTypes = EnumSet.copyOf(requiredTypes);
+            missingTypes.removeAll(existingTypes);
+
+            throw new InvalidCourseStateException(
+                    "Course must have at least one task of each type. Missing: " + missingTypes
+            );
         }
     }
 
-    @GetMapping("/instructor/{id}/courses")
-    public ResponseEntity<?> getInstructorCoursesReport(@PathVariable("id") Long instructorId) {
-        try {
-            InstructorCoursesReportResponse response = courseService.getInstructorCoursesReport(instructorId);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            if (e.getMessage().contains("not found")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    private void validateTaskSequence(Long courseId) {
+        List<Task> tasks = taskRepository.findByCourseId(courseId);
+
+        if (!tasks.isEmpty()) {
+            List<Integer> orders = tasks.stream()
+                    .map(Task::getOrder)
+                    .sorted()
+                    .toList();
+
+            for (int i = 0; i < orders.size(); i++) {
+                if (!orders.get(i).equals(i + 1)) {
+                    throw new InvalidCourseStateException("Tasks must have continuous sequential order starting from 1");
+                }
             }
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorItemDTO("error", "Internal server error occurred"));
         }
+    }
+
+    private CourseReportResponse buildCourseReport(Course course) {
+        int taskCount = taskRepository.countByCourseId(course.getId());
+        return new CourseReportResponse(
+                course.getId(),
+                course.getTitle(),
+                course.getStatus(),
+                course.getPublishedAt(),
+                taskCount
+        );
     }
 }
