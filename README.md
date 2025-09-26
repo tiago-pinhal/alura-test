@@ -1,7 +1,7 @@
 # Case Tecnico Alura
 ### Validação dos requisitos
 
-### Via teste unitários:
+### Via testes unitários:
 ```bash
 ./mvnw test
 ```
