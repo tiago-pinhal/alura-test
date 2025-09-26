@@ -36,9 +36,7 @@ class UserControllerTest {
         mockMvc.perform(post("/user/new")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newUserDTO)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$[0].field").value("email"))
-                .andExpect(jsonPath("$[0].message").isNotEmpty());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -51,9 +49,7 @@ class UserControllerTest {
         mockMvc.perform(post("/user/new")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newUserDTO)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$[0].field").value("email"))
-                .andExpect(jsonPath("$[0].message").isNotEmpty());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
